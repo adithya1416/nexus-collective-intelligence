@@ -1,0 +1,2040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>NEXUS — Collective Intelligence Registry</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════
+   DESIGN TOKENS — Mission Control Aesthetic
+   Signature: Live node-graph intelligence map
+═══════════════════════════════════════════ */
+:root {
+  --void:    #03060f;
+  --deep:    #060d1e;
+  --navy:    #091428;
+  --panel:   #0c1a30;
+  --rim:     #112240;
+  --wire:    #162d4a;
+  --azure:   #0066cc;
+  --pulse:   #0ea5e9;
+  --signal:  #00e5ff;
+  --live:    #10b981;
+  --warn:    #f59e0b;
+  --critical:#ef4444;
+  --ink:     #cde4ff;
+  --dim:     #5d82a8;
+  --ghost:   #2a4a6b;
+  --mono:    'Space Mono', monospace;
+  --sans:    'Space Grotesk', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--sans);
+  background: var(--void);
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── CANVAS NODE GRAPH (signature element) ── */
+#nodeCanvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.4;
+}
+
+/* ── LAYOUT SHELL ── */
+.shell {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 100vh;
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  height: 56px;
+  background: rgba(6,13,30,0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--wire);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.wordmark {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.wordmark-n {
+  font-family: var(--mono);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--signal);
+  letter-spacing: 4px;
+}
+
+.wordmark-sub {
+  font-size: 10px;
+  color: var(--dim);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+/* IQ meter */
+.iq-meter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 14px;
+  background: var(--panel);
+  border: 1px solid var(--wire);
+  border-radius: 4px;
+}
+
+.iq-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.iq-val {
+  font-family: var(--mono);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--signal);
+  min-width: 48px;
+  line-height: 1;
+  transition: color 0.3s;
+}
+
+.iq-trend {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--live);
+}
+
+/* Status pill */
+.status-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--live);
+  letter-spacing: 1px;
+}
+
+.status-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--live);
+  animation: blink 2s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%,100% { opacity:1; }
+  50% { opacity:0.3; }
+}
+
+/* ── BODY GRID ── */
+.body {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  height: calc(100vh - 56px);
+  overflow: hidden;
+}
+
+/* ── LEFT RAIL ── */
+.rail {
+  background: var(--deep);
+  border-right: 1px solid var(--wire);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.rail::-webkit-scrollbar { width: 3px; }
+.rail::-webkit-scrollbar-thumb { background: var(--wire); }
+
+.rail-section {
+  border-bottom: 1px solid var(--wire);
+  padding: 20px;
+}
+
+.rail-eyebrow {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: var(--dim);
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rail-eyebrow::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--wire);
+}
+
+/* Form elements */
+.field { margin-bottom: 14px; }
+
+.field label {
+  display: block;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--dim);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  background: var(--navy);
+  border: 1px solid var(--wire);
+  border-radius: 3px;
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 12px;
+  padding: 9px 11px;
+  outline: none;
+  transition: border-color 0.15s;
+  appearance: none;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  border-color: var(--pulse);
+  box-shadow: 0 0 0 2px rgba(14,165,233,0.12);
+}
+
+.field select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235d82a8'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
+  cursor: pointer;
+}
+
+.field select option { background: var(--navy); }
+.field textarea { resize: none; height: 64px; font-size: 12px; line-height: 1.5; }
+
+/* Launch button */
+.btn-launch {
+  width: 100%;
+  padding: 13px;
+  background: var(--azure);
+  border: none;
+  border-radius: 3px;
+  color: #fff;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.btn-launch:hover:not(:disabled) {
+  background: var(--pulse);
+  box-shadow: 0 0 24px rgba(14,165,233,0.3);
+}
+
+.btn-launch:active:not(:disabled) { transform: scale(0.98); }
+.btn-launch:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-ghost {
+  width: 100%;
+  padding: 9px;
+  background: transparent;
+  border: 1px solid var(--wire);
+  border-radius: 3px;
+  color: var(--dim);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.btn-ghost:hover { border-color: var(--critical); color: var(--critical); }
+
+/* Telemetry stats */
+.tele-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(22,45,74,0.5);
+}
+
+.tele-row:last-child { border-bottom: none; }
+.tele-key { font-family: var(--mono); font-size: 9px; color: var(--dim); letter-spacing: 1px; }
+.tele-val { font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--signal); }
+.tele-val.green { color: var(--live); }
+.tele-val.amber { color: var(--warn); }
+.tele-val.red { color: var(--critical); }
+
+/* ── MAIN WORKSPACE ── */
+.workspace {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Tab nav */
+.tabnav {
+  display: flex;
+  align-items: stretch;
+  background: var(--deep);
+  border-bottom: 1px solid var(--wire);
+  padding: 0 24px;
+  gap: 0;
+  flex-shrink: 0;
+}
+
+.tab-btn {
+  padding: 14px 18px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--dim);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+  background: none;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+}
+
+.tab-btn:hover { color: var(--ink); }
+.tab-btn.on { color: var(--signal); border-bottom-color: var(--signal); }
+
+.pane-wrap {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 24px;
+}
+
+.pane-wrap::-webkit-scrollbar { width: 4px; }
+.pane-wrap::-webkit-scrollbar-thumb { background: var(--wire); }
+
+.pane { display: none; }
+.pane.on { display: block; }
+
+/* ── HERO (RUN PANE) ── */
+.hero-card {
+  background: linear-gradient(135deg, rgba(0,102,204,0.06) 0%, rgba(0,229,255,0.04) 100%);
+  border: 1px solid rgba(0,229,255,0.1);
+  border-radius: 6px;
+  padding: 28px;
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-card::before {
+  content: '';
+  position: absolute;
+  top: -1px; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--signal), transparent);
+}
+
+.hero-tag {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: var(--signal);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.hero-headline {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-bottom: 8px;
+  color: #fff;
+}
+
+.hero-sub {
+  font-size: 13px;
+  color: var(--dim);
+  line-height: 1.6;
+  max-width: 560px;
+}
+
+/* ── AGENT PIPELINE ── */
+.pipeline-wrap {
+  margin-bottom: 20px;
+}
+
+.pipeline-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--dim);
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.pipeline {
+  display: flex;
+  gap: 0;
+  position: relative;
+}
+
+/* Connector rail */
+.pipeline::after {
+  content: '';
+  position: absolute;
+  top: 26px;
+  left: 44px;
+  right: 44px;
+  height: 1px;
+  background: repeating-linear-gradient(90deg, var(--wire) 0, var(--wire) 4px, transparent 4px, transparent 10px);
+  z-index: 0;
+}
+
+.agent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  z-index: 1;
+}
+
+.agent-orb {
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  background: var(--panel);
+  border: 1.5px solid var(--wire);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.agent-orb::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.agent.running .agent-orb {
+  border-color: var(--signal);
+  background: rgba(0,229,255,0.08);
+}
+
+.agent.running .agent-orb::after {
+  border-color: rgba(0,229,255,0.3);
+  box-shadow: 0 0 20px rgba(0,229,255,0.2);
+  animation: orb-pulse 0.9s ease-in-out infinite;
+}
+
+.agent.done .agent-orb {
+  border-color: var(--live);
+  background: rgba(16,185,129,0.08);
+}
+
+.agent.querying .agent-orb {
+  border-color: var(--warn);
+  background: rgba(245,158,11,0.08);
+}
+
+.agent.querying .agent-orb::after {
+  border-color: rgba(245,158,11,0.3);
+  animation: orb-pulse 0.7s ease-in-out infinite;
+}
+
+@keyframes orb-pulse {
+  0%,100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.08); opacity: 0.6; }
+}
+
+.agent-id {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: var(--dim);
+  text-transform: uppercase;
+  text-align: center;
+  transition: color 0.3s;
+}
+
+.agent.running .agent-id { color: var(--signal); }
+.agent.done .agent-id { color: var(--live); }
+.agent.querying .agent-id { color: var(--warn); }
+
+.agent-tick {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--wire);
+  transition: background 0.3s;
+}
+
+.agent.running .agent-tick { background: var(--signal); animation: blink 0.5s infinite; }
+.agent.done .agent-tick { background: var(--live); }
+.agent.querying .agent-tick { background: var(--warn); animation: blink 0.4s infinite; }
+
+/* ── TERMINAL LOG ── */
+.terminal {
+  background: var(--void);
+  border: 1px solid var(--wire);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 20px;
+  font-family: var(--mono);
+}
+
+.terminal-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--wire);
+}
+
+.terminal-dots {
+  display: flex;
+  gap: 5px;
+}
+
+.td { width: 9px; height: 9px; border-radius: 50%; }
+.td-r { background: #ff5f57; }
+.td-y { background: #ffbd2e; }
+.td-g { background: #28c840; }
+
+.terminal-title {
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--dim);
+  text-transform: uppercase;
+}
+
+.terminal-status {
+  font-size: 10px;
+  color: var(--dim);
+  transition: color 0.3s;
+}
+
+.terminal-body {
+  padding: 14px;
+  max-height: 220px;
+  overflow-y: auto;
+  font-size: 11px;
+  line-height: 1.8;
+}
+
+.terminal-body::-webkit-scrollbar { width: 3px; }
+.terminal-body::-webkit-scrollbar-thumb { background: var(--wire); }
+
+.log { }
+.log-t { color: rgba(93,130,168,0.5); margin-right: 8px; }
+.log.sys { color: var(--dim); }
+.log.agent { color: var(--signal); }
+.log.query { color: var(--warn); }
+.log.ok { color: var(--live); }
+.log.pub { color: #a78bfa; }
+.log.result { color: #fff; font-weight: 700; }
+
+/* ── OUTPUT GRID ── */
+.output-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.ocard {
+  background: var(--panel);
+  border: 1px solid var(--wire);
+  border-radius: 4px;
+  padding: 18px;
+  transition: border-color 0.3s;
+}
+
+.ocard.lit { border-color: var(--live); }
+.ocard.lit-azure { border-color: var(--pulse); }
+
+.ocard-eye {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--dim);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ocard-eye .dot {
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--dim);
+}
+
+.ocard.lit .ocard-eye .dot { background: var(--live); }
+.ocard.lit-azure .ocard-eye .dot { background: var(--pulse); }
+
+.bignum {
+  font-family: var(--mono);
+  font-size: 48px;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.bignum.up { color: var(--live); }
+.bignum.mid { color: var(--signal); }
+.bignum.down { color: var(--critical); }
+
+.bigsub {
+  font-size: 11px;
+  color: var(--dim);
+  line-height: 1.4;
+}
+
+/* Strategy items */
+.strat-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 9px 0;
+  border-bottom: 1px solid rgba(22,45,74,0.6);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.strat-item:last-child { border-bottom: none; padding-bottom: 0; }
+.strat-item .si { flex-shrink: 0; font-size: 14px; margin-top: 1px; }
+.strat-item .st { color: var(--ink); }
+.strat-item .ss { font-family: var(--mono); font-size: 9px; color: var(--dim); margin-top: 2px; letter-spacing: 1px; }
+
+/* Blueprint badges */
+.bp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(0,102,204,0.12);
+  border: 1px solid rgba(0,102,204,0.35);
+  border-radius: 3px;
+  padding: 3px 8px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--pulse);
+  margin: 2px;
+}
+
+/* Tags */
+.tag {
+  display: inline-block;
+  background: rgba(22,45,74,0.8);
+  border: 1px solid var(--wire);
+  border-radius: 3px;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--dim);
+  padding: 3px 7px;
+  margin: 2px;
+  letter-spacing: 1px;
+}
+
+/* Progress */
+.prog-bar {
+  height: 3px;
+  background: var(--wire);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.prog-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--azure), var(--signal));
+  border-radius: 2px;
+  transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
+}
+
+/* ── REGISTRY PANE ── */
+.reg-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.bp-card {
+  background: var(--panel);
+  border: 1px solid var(--wire);
+  border-radius: 4px;
+  padding: 16px;
+  transition: transform 0.2s, border-color 0.2s;
+  cursor: default;
+}
+
+.bp-card:hover { transform: translateY(-2px); border-color: var(--ghost); }
+.bp-card.fresh { border-color: var(--live); animation: flash-in 0.5s ease; }
+
+@keyframes flash-in {
+  from { opacity:0; transform: scale(0.96); }
+  to { opacity:1; transform: scale(1); }
+}
+
+.bp-hd {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.bp-id-mono {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--dim);
+}
+
+.bp-type-chip {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 2px;
+}
+
+.bp-type-chip.success { background: rgba(16,185,129,0.12); color: var(--live); }
+.bp-type-chip.failure { background: rgba(239,68,68,0.12); color: var(--critical); }
+.bp-type-chip.signal  { background: rgba(245,158,11,0.12); color: var(--warn); }
+
+.bp-title-text {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+.bp-meta-row {
+  display: flex;
+  gap: 10px;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--dim);
+  margin-bottom: 10px;
+}
+
+.conf-track {
+  height: 3px;
+  background: var(--wire);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.conf-bar {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.8s cubic-bezier(0.4,0,0.2,1);
+}
+
+.conf-bar.h { background: var(--live); }
+.conf-bar.m { background: var(--warn); }
+.conf-bar.l { background: var(--critical); }
+
+.bp-insight-text {
+  font-size: 11px;
+  color: var(--dim);
+  line-height: 1.5;
+}
+
+/* ── DASHBOARD PANE ── */
+.dash-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.kpi {
+  background: var(--panel);
+  border: 1px solid var(--wire);
+  border-radius: 4px;
+  padding: 16px;
+  text-align: center;
+}
+
+.kpi-val {
+  font-family: var(--mono);
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--signal);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.kpi-label {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 2px;
+  color: var(--dim);
+  text-transform: uppercase;
+}
+
+.insight-feed { display: flex; flex-direction: column; gap: 10px; }
+
+.insight-row {
+  background: var(--panel);
+  border: 1px solid var(--wire);
+  border-radius: 4px;
+  padding: 14px 16px;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.insight-n {
+  font-family: var(--mono);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--signal);
+  opacity: 0.4;
+  min-width: 28px;
+  line-height: 1;
+}
+
+.insight-body { font-size: 13px; line-height: 1.5; }
+.insight-src { font-family: var(--mono); font-size: 9px; color: var(--dim); margin-top: 4px; letter-spacing: 1px; }
+
+/* ── COMPARE PANE ── */
+.compare-split {
+  display: grid;
+  grid-template-columns: 1fr 52px 1fr;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.cmp-card {
+  background: var(--panel);
+  border: 1px solid var(--wire);
+  border-radius: 4px;
+  padding: 24px;
+}
+
+.cmp-card.before { border-color: rgba(239,68,68,0.4); }
+.cmp-card.after { border-color: rgba(16,185,129,0.4); }
+
+.cmp-eye {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.cmp-card.before .cmp-eye { color: var(--critical); }
+.cmp-card.after .cmp-eye { color: var(--live); }
+
+.cmp-num {
+  font-family: var(--mono);
+  font-size: 56px;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.cmp-card.before .cmp-num { color: var(--critical); }
+.cmp-card.after .cmp-num { color: var(--live); }
+
+.cmp-bullets { font-size: 12px; color: var(--dim); line-height: 2; }
+.cmp-bullets strong { color: var(--live); }
+
+.vs-orb {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: var(--navy);
+  border: 1px solid var(--wire);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--dim);
+  margin: 0 auto;
+}
+
+.hist-item {
+  background: var(--panel);
+  border: 1px solid var(--wire);
+  border-radius: 4px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.hist-name { font-weight: 600; font-size: 13px; flex: 1; }
+.hist-region { font-family: var(--mono); font-size: 10px; color: var(--dim); }
+.hist-stat { text-align: center; min-width: 60px; }
+.hist-stat-val { font-family: var(--mono); font-size: 18px; font-weight: 700; color: var(--signal); }
+.hist-stat-val.good { color: var(--live); }
+.hist-stat-label { font-family: var(--mono); font-size: 8px; color: var(--dim); letter-spacing: 1px; }
+
+/* ── EMPTY STATE ── */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--dim);
+}
+
+.empty-glyph { font-size: 40px; margin-bottom: 14px; opacity: 0.3; }
+.empty-h { font-size: 15px; font-weight: 600; color: var(--ink); margin-bottom: 6px; }
+.empty-p { font-size: 12px; line-height: 1.6; max-width: 280px; }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed;
+  bottom: 20px; right: 20px;
+  background: var(--panel);
+  border: 1px solid var(--live);
+  border-radius: 4px;
+  padding: 12px 18px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--live);
+  max-width: 300px;
+  z-index: 999;
+  transform: translateY(60px);
+  opacity: 0;
+  transition: transform 0.3s, opacity 0.3s;
+  pointer-events: none;
+}
+
+.toast.show { transform: translateY(0); opacity: 1; }
+
+/* shimmer */
+.shim {
+  background: linear-gradient(90deg, var(--panel) 25%, var(--rim) 50%, var(--panel) 75%);
+  background-size: 200% 100%;
+  animation: shim 1.4s infinite;
+  border-radius: 3px;
+  height: 12px;
+  margin-bottom: 7px;
+}
+
+@keyframes shim { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+
+/* spinner */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { display: inline-block; animation: spin 0.8s linear infinite; }
+
+/* VIDEO MODAL */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(3,6,15,0.92);
+  backdrop-filter: blur(8px);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+
+.modal-overlay.open {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.modal-box {
+  background: var(--navy);
+  border: 1px solid var(--wire);
+  border-radius: 6px;
+  padding: 28px;
+  max-width: 660px;
+  width: 90%;
+  position: relative;
+  transform: translateY(16px);
+  transition: transform 0.3s;
+}
+
+.modal-overlay.open .modal-box { transform: translateY(0); }
+
+.modal-close {
+  position: absolute;
+  top: 14px; right: 14px;
+  background: none;
+  border: none;
+  color: var(--dim);
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.modal-close:hover { color: var(--critical); }
+
+.modal-title {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--signal);
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.video-wrap {
+  position: relative;
+  padding-bottom: 56.25%;
+  height: 0;
+  background: var(--void);
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--wire);
+  margin-bottom: 16px;
+}
+
+.video-wrap iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.video-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--dim);
+  font-family: var(--mono);
+  font-size: 11px;
+  text-align: center;
+  padding: 20px;
+}
+
+.play-btn-big {
+  width: 60px; height: 60px;
+  border-radius: 50%;
+  background: var(--azure);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.play-btn-big:hover { background: var(--pulse); transform: scale(1.05); }
+
+.script-steps { font-size: 12px; color: var(--dim); line-height: 2; }
+.script-steps strong { color: var(--ink); }
+
+/* watch button in topbar */
+.btn-watch {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: transparent;
+  border: 1px solid var(--wire);
+  border-radius: 3px;
+  color: var(--dim);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.btn-watch:hover { border-color: var(--pulse); color: var(--pulse); }
+</style>
+</head>
+<body>
+
+<!-- Live node-graph canvas -->
+<canvas id="nodeCanvas"></canvas>
+
+<!-- Video Modal -->
+<div class="modal-overlay" id="videoModal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-title">▶ NEXUS — System Walkthrough</div>
+    <div class="video-wrap">
+      <div class="video-placeholder" id="videoPlaceholder">
+        <div class="play-btn-big" onclick="loadVideo()">▶</div>
+        <div>Your demo video goes here</div>
+        <div style="font-size:10px;opacity:0.6">Upload to YouTube (unlisted) → paste URL below → replace VIDEO_ID</div>
+      </div>
+      <iframe id="videoFrame" style="display:none" allowfullscreen allow="autoplay"></iframe>
+    </div>
+    <div class="modal-title" style="margin-bottom:12px">DEMO SCRIPT — 3 MINUTES</div>
+    <div class="script-steps">
+      <div><strong>0:00–0:30</strong> — Open with empty registry. Show Network IQ = 0. Run Campaign 1 → show 9% result, no blueprints used.</div>
+      <div><strong>0:30–1:15</strong> — Watch Publisher Agent publish Blueprint. Switch to Registry tab. Show it appearing. IQ score rises.</div>
+      <div><strong>1:15–2:00</strong> — Run Campaign 2, same region. Agent finds the blueprint. Show strategy informed by prior run. Result 28%.</div>
+      <div><strong>2:00–2:30</strong> — Switch to Intelligence tab. Show network-discovered patterns. "No one programmed these — NEXUS found them."</div>
+      <div><strong>2:30–3:00</strong> — Switch to Before vs After. Show 9% → 28%. "Not a smarter agent. A smarter network."</div>
+    </div>
+  </div>
+</div>
+
+<!-- APP SHELL -->
+<div class="shell">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="wordmark">
+      <div class="wordmark-n">NEXUS</div>
+      <div class="wordmark-sub">Collective Intelligence Registry</div>
+    </div>
+    <div class="topbar-right">
+      <button class="btn-watch" onclick="openModal()">
+        <span>▶</span> WATCH DEMO
+      </button>
+      <div class="iq-meter">
+        <div>
+          <div class="iq-label">Network IQ</div>
+          <div class="iq-val" id="iqVal">0</div>
+        </div>
+        <div class="iq-trend" id="iqTrend">↑</div>
+      </div>
+      <div class="status-pill">
+        <div class="status-dot"></div>
+        LIVE
+      </div>
+    </div>
+  </header>
+
+  <!-- BODY -->
+  <div class="body">
+
+    <!-- LEFT RAIL -->
+    <aside class="rail">
+      <div class="rail-section">
+        <div class="rail-eyebrow">Campaign Input</div>
+
+        <div class="field">
+          <label>Partner / Company</label>
+          <input type="text" id="fPartner" value="Bright Futures EdTech" placeholder="Company name"/>
+        </div>
+
+        <div class="field">
+          <label>Target Region</label>
+          <select id="fRegion">
+            <option>Hyderabad, Telangana</option>
+            <option>Patna, Bihar</option>
+            <option>Coimbatore, Tamil Nadu</option>
+            <option>Bhopal, Madhya Pradesh</option>
+            <option>Nagpur, Maharashtra</option>
+            <option>Vizag, Andhra Pradesh</option>
+            <option>Jaipur, Rajasthan</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Campaign Objective</label>
+          <select id="fObjective">
+            <option value="Student admissions for B.Tech programs">B.Tech Admissions</option>
+            <option value="MBA program enrollment">MBA Enrollment</option>
+            <option value="Online certification courses">Online Certifications</option>
+            <option value="Skill development programs">Skill Development</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Demographic</label>
+          <select id="fDemo">
+            <option value="Tier-2 city students from joint families, age 17-22">Tier-2 Students (Joint Family)</option>
+            <option value="Working professionals age 25-35 seeking upskilling">Working Professionals</option>
+            <option value="Rural students with limited internet access">Rural Students</option>
+            <option value="Urban students from metro areas">Urban Metro Students</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Budget</label>
+          <select id="fBudget">
+            <option>₹50,000</option>
+            <option selected>₹1,00,000</option>
+            <option>₹2,50,000</option>
+            <option>₹5,00,000</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Context</label>
+          <textarea id="fContext">New partnership, first campaign in this region. Festival season upcoming.</textarea>
+        </div>
+
+        <button class="btn-launch" id="launchBtn" onclick="runSwarm()">
+          <span id="launchIcon">⚡</span>
+          <span id="launchTxt">LAUNCH AGENT SWARM</span>
+        </button>
+        <button class="btn-ghost" onclick="hardReset()">RESET REGISTRY</button>
+      </div>
+
+      <div class="rail-section">
+        <div class="rail-eyebrow">Registry Telemetry</div>
+        <div class="tele-row"><span class="tele-key">BLUEPRINTS</span><span class="tele-val" id="tBP">0</span></div>
+        <div class="tele-row"><span class="tele-key">SUCCESS</span><span class="tele-val green" id="tSucc">0</span></div>
+        <div class="tele-row"><span class="tele-key">FAILURE</span><span class="tele-val red" id="tFail">0</span></div>
+        <div class="tele-row"><span class="tele-key">SIGNALS</span><span class="tele-val amber" id="tSig">0</span></div>
+        <div class="tele-row"><span class="tele-key">CAMPAIGNS</span><span class="tele-val" id="tCamp">0</span></div>
+        <div class="tele-row"><span class="tele-key">AVG CONF</span><span class="tele-val" id="tConf">—</span></div>
+      </div>
+    </aside>
+
+    <!-- WORKSPACE -->
+    <main class="workspace">
+
+      <!-- TAB NAV -->
+      <nav class="tabnav">
+        <button class="tab-btn on" onclick="switchPane('run',this)">AGENT RUN</button>
+        <button class="tab-btn" onclick="switchPane('registry',this)">REGISTRY</button>
+        <button class="tab-btn" onclick="switchPane('dashboard',this)">INTELLIGENCE</button>
+        <button class="tab-btn" onclick="switchPane('compare',this)">BEFORE / AFTER</button>
+      </nav>
+
+      <div class="pane-wrap">
+
+        <!-- ── PANE: RUN ── -->
+        <div class="pane on" id="pane-run">
+
+          <div class="hero-card" id="heroCard">
+            <div class="hero-tag">MICROSOFT BUILD AI 2026 · AGENT SWARMS</div>
+            <div class="hero-headline">Collective Intelligence for Distributed Networks</div>
+            <div class="hero-sub">Configure a campaign in the left panel. Watch 5 agents collaborate, query shared intelligence, generate optimized assets, and publish what they learn back to the network — making every future agent smarter.</div>
+          </div>
+
+          <!-- Pipeline -->
+          <div class="pipeline-wrap">
+            <div class="pipeline-label">Agent Swarm Pipeline</div>
+            <div class="pipeline">
+              <div class="agent" id="ag-scout"><div class="agent-orb">🔍</div><div class="agent-id">Scout</div><div class="agent-tick"></div></div>
+              <div class="agent" id="ag-arch"><div class="agent-orb">🏗</div><div class="agent-id">Architect</div><div class="agent-tick"></div></div>
+              <div class="agent" id="ag-build"><div class="agent-orb">⚙</div><div class="agent-id">Builder</div><div class="agent-tick"></div></div>
+              <div class="agent" id="ag-guard"><div class="agent-orb">🛡</div><div class="agent-id">Guardian</div><div class="agent-tick"></div></div>
+              <div class="agent" id="ag-pub"><div class="agent-orb">📡</div><div class="agent-id">Publisher</div><div class="agent-tick"></div></div>
+            </div>
+          </div>
+
+          <!-- Terminal -->
+          <div class="terminal">
+            <div class="terminal-bar">
+              <div class="terminal-dots"><div class="td td-r"></div><div class="td td-y"></div><div class="td td-g"></div></div>
+              <div class="terminal-title">NEXUS AGENT LOG</div>
+              <div class="terminal-status" id="termStatus">IDLE</div>
+            </div>
+            <div class="terminal-body" id="termBody">
+              <div class="log sys"><span class="log-t">0.0s</span>System initialised. Intelligence Registry ready. Awaiting campaign input.</div>
+            </div>
+          </div>
+
+          <!-- Outputs (hidden until run) -->
+          <div id="outputs" style="display:none">
+            <div class="output-grid">
+              <div class="ocard lit-azure" id="oc-bp">
+                <div class="ocard-eye"><div class="dot"></div>BLUEPRINTS RETRIEVED</div>
+                <div id="bpUsed"><div class="shim"></div><div class="shim" style="width:65%"></div></div>
+              </div>
+              <div class="ocard" id="oc-conv">
+                <div class="ocard-eye"><div class="dot"></div>PROJECTED CONVERSION</div>
+                <div class="bignum mid" id="convNum">—</div>
+                <div class="bigsub" id="convSub">Calculating...</div>
+                <div class="prog-bar"><div class="prog-fill" id="convProg" style="width:0"></div></div>
+              </div>
+              <div class="ocard" id="oc-strat">
+                <div class="ocard-eye"><div class="dot"></div>CAMPAIGN STRATEGY</div>
+                <div id="stratBody"><div class="shim"></div><div class="shim"></div><div class="shim" style="width:55%"></div></div>
+              </div>
+              <div class="ocard" id="oc-assets">
+                <div class="ocard-eye"><div class="dot"></div>GENERATED ASSETS</div>
+                <div id="assetsBody"><div class="shim"></div><div class="shim" style="width:80%"></div></div>
+              </div>
+            </div>
+
+            <div class="ocard" id="oc-guard" style="margin-bottom:14px;display:none">
+              <div class="ocard-eye"><div class="dot"></div>GUARDIAN VALIDATION</div>
+              <div id="guardBody"></div>
+            </div>
+
+            <div class="ocard lit" id="oc-result" style="display:none">
+              <div class="ocard-eye"><div class="dot"></div>BLUEPRINT PUBLISHED</div>
+              <div id="resultBody"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── PANE: REGISTRY ── -->
+        <div class="pane" id="pane-registry">
+          <div id="regEmpty" class="empty">
+            <div class="empty-glyph">🧠</div>
+            <div class="empty-h">Registry is empty</div>
+            <div class="empty-p">Run your first campaign. The Publisher Agent will extract intelligence and publish Blueprints here automatically.</div>
+          </div>
+          <div id="regGrid" class="reg-grid" style="display:none"></div>
+        </div>
+
+        <!-- ── PANE: DASHBOARD ── -->
+        <div class="pane" id="pane-dashboard">
+          <div class="dash-kpis">
+            <div class="kpi"><div class="kpi-val" id="dIQ">0</div><div class="kpi-label">Network IQ</div></div>
+            <div class="kpi"><div class="kpi-val" id="dBP" style="color:var(--live)">0</div><div class="kpi-label">Blueprints</div></div>
+            <div class="kpi"><div class="kpi-val" id="dCamp" style="color:var(--warn)">0</div><div class="kpi-label">Campaigns</div></div>
+            <div class="kpi"><div class="kpi-val" id="dConf" style="color:var(--pulse)">—</div><div class="kpi-label">Avg Confidence</div></div>
+          </div>
+          <div class="pipeline-label" style="margin-bottom:14px">NETWORK-DISCOVERED INSIGHTS</div>
+          <div id="insightFeed" class="insight-feed">
+            <div class="empty"><div class="empty-glyph" style="font-size:28px">💡</div><div class="empty-h">No patterns yet</div><div class="empty-p">Run 2+ campaigns to surface cross-campaign intelligence.</div></div>
+          </div>
+        </div>
+
+        <!-- ── PANE: COMPARE ── -->
+        <div class="pane" id="pane-compare">
+          <div class="compare-split">
+            <div class="cmp-card before">
+              <div class="cmp-eye">Without NEXUS</div>
+              <div class="cmp-num">9%</div>
+              <div class="cmp-bullets">
+                Empty registry. Zero prior intelligence.<br/>
+                Generic, uninformed assets.<br/>
+                3–5 days to deploy manually.<br/>
+                No learning from this run.
+              </div>
+            </div>
+            <div class="vs-orb">VS</div>
+            <div class="cmp-card after">
+              <div class="cmp-eye">With NEXUS</div>
+              <div class="cmp-num" id="cmpAfter" style="color:var(--dim)">—</div>
+              <div class="cmp-bullets" id="cmpAfterSub">Run your first campaign to see the improvement.</div>
+            </div>
+          </div>
+          <div class="pipeline-label" style="margin-bottom:14px">CAMPAIGN HISTORY</div>
+          <div id="histFeed">
+            <div class="empty"><div class="empty-glyph" style="font-size:28px">📋</div><div class="empty-h">No campaigns yet</div><div class="empty-p">Run campaigns to track improvement over time.</div></div>
+          </div>
+        </div>
+
+      </div><!-- pane-wrap -->
+    </main>
+  </div><!-- body -->
+</div><!-- shell -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ════════════════════════════════
+   NODE GRAPH CANVAS — SIGNATURE ELEMENT
+   Living network that gains edges as Blueprints publish
+════════════════════════════════ */
+const canvas = document.getElementById('nodeCanvas');
+const ctx = canvas.getContext('2d');
+
+let nodes = [], edges = [], animFrame;
+const NUM_NODES = 38;
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+
+function initNodes() {
+  nodes = [];
+  for (let i = 0; i < NUM_NODES; i++) {
+    nodes.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      vx: (Math.random() - 0.5) * 0.25,
+      vy: (Math.random() - 0.5) * 0.25,
+      r: 1.5 + Math.random() * 2,
+      bright: Math.random(),
+      phase: Math.random() * Math.PI * 2,
+      active: false,
+      pulseT: 0
+    });
+  }
+  edges = [];
+}
+
+function addEdge(fromIdx, toIdx) {
+  edges.push({ from: fromIdx, to: toIdx, alpha: 0, maxAlpha: 0.35 + Math.random() * 0.2, born: Date.now() });
+  nodes[fromIdx].active = true;
+  nodes[fromIdx].pulseT = 1;
+  nodes[toIdx].active = true;
+  nodes[toIdx].pulseT = 1;
+}
+
+function drawGraph(ts) {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Update edges
+  edges.forEach(e => {
+    e.alpha = Math.min(e.alpha + 0.008, e.maxAlpha);
+  });
+
+  // Draw edges
+  edges.forEach(e => {
+    const a = nodes[e.from], b = nodes[e.to];
+    const grad = ctx.createLinearGradient(a.x, a.y, b.x, b.y);
+    grad.addColorStop(0, `rgba(0,230,255,${e.alpha})`);
+    grad.addColorStop(0.5, `rgba(0,102,204,${e.alpha * 0.6})`);
+    grad.addColorStop(1, `rgba(0,230,255,${e.alpha})`);
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = 0.6;
+    ctx.stroke();
+  });
+
+  // Draw proximity edges (ghost connections)
+  for (let i = 0; i < nodes.length; i++) {
+    for (let j = i + 1; j < nodes.length; j++) {
+      const dx = nodes[i].x - nodes[j].x;
+      const dy = nodes[i].y - nodes[j].y;
+      const d = Math.sqrt(dx*dx + dy*dy);
+      if (d < 140) {
+        const a = (1 - d/140) * 0.04;
+        ctx.beginPath();
+        ctx.moveTo(nodes[i].x, nodes[i].y);
+        ctx.lineTo(nodes[j].x, nodes[j].y);
+        ctx.strokeStyle = `rgba(22,45,74,${a})`;
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+      }
+    }
+  }
+
+  // Update + draw nodes
+  const t = ts / 1000;
+  nodes.forEach(n => {
+    n.x += n.vx;
+    n.y += n.vy;
+    if (n.x < 0 || n.x > canvas.width) n.vx *= -1;
+    if (n.y < 0 || n.y > canvas.height) n.vy *= -1;
+
+    n.pulseT = Math.max(0, n.pulseT - 0.02);
+    const glow = n.active ? 0.9 : 0.3 + 0.2 * Math.sin(t * 0.8 + n.phase);
+    const r = n.r + (n.active ? n.pulseT * 3 : 0);
+
+    if (n.active) {
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, r + 4, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(0,229,255,${glow * 0.08})`;
+      ctx.fill();
+    }
+
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+    ctx.fillStyle = n.active
+      ? `rgba(0,229,255,${glow})`
+      : `rgba(93,130,168,${glow * 0.5})`;
+    ctx.fill();
+  });
+
+  animFrame = requestAnimationFrame(drawGraph);
+}
+
+window.addEventListener('resize', () => { resizeCanvas(); initNodes(); });
+resizeCanvas();
+initNodes();
+requestAnimationFrame(drawGraph);
+
+// Publish a new edge when a Blueprint is published
+function publishEdgeEffect() {
+  if (nodes.length < 2) return;
+  const a = Math.floor(Math.random() * nodes.length);
+  let b = Math.floor(Math.random() * nodes.length);
+  while (b === a) b = Math.floor(Math.random() * nodes.length);
+  addEdge(a, b);
+  setTimeout(() => {
+    const c = Math.floor(Math.random() * nodes.length);
+    addEdge(b, c);
+  }, 400);
+}
+
+/* ════════════════════════════════
+   STATE
+════════════════════════════════ */
+let registry = [], campaigns = [], iq = 0, running = false, t0 = Date.now();
+
+/* ════════════════════════════════
+   VIDEO MODAL
+════════════════════════════════ */
+function openModal() { document.getElementById('videoModal').classList.add('open'); }
+function closeModal() { document.getElementById('videoModal').classList.remove('open'); }
+function loadVideo() {
+  // Replace YOUR_VIDEO_ID with actual YouTube video ID after recording
+  const id = 'YOUR_VIDEO_ID';
+  if (id === 'YOUR_VIDEO_ID') {
+    toast('Upload your demo to YouTube, then replace YOUR_VIDEO_ID in the code.');
+    return;
+  }
+  const f = document.getElementById('videoFrame');
+  f.src = `https://www.youtube.com/embed/${id}?autoplay=1`;
+  f.style.display = 'block';
+  document.getElementById('videoPlaceholder').style.display = 'none';
+}
+document.getElementById('videoModal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeModal();
+});
+
+/* ════════════════════════════════
+   TAB SWITCHING
+════════════════════════════════ */
+function switchPane(name, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  document.querySelectorAll('.pane').forEach(p => p.classList.remove('on'));
+  document.getElementById('pane-'+name).classList.add('on');
+  if (name === 'dashboard') refreshDash();
+}
+
+/* ════════════════════════════════
+   LOGGING
+════════════════════════════════ */
+function log(msg, type='sys') {
+  const tb = document.getElementById('termBody');
+  const el = document.createElement('div');
+  el.className = 'log ' + type;
+  const elapsed = ((Date.now()-t0)/1000).toFixed(1);
+  el.innerHTML = `<span class="log-t">${elapsed}s</span>${msg}`;
+  tb.appendChild(el);
+  tb.scrollTop = tb.scrollHeight;
+}
+
+function setAgent(id, state) {
+  document.getElementById('ag-'+id).className = 'agent ' + state;
+}
+
+function setTermStatus(txt, color='var(--dim)') {
+  const el = document.getElementById('termStatus');
+  el.textContent = txt;
+  el.style.color = color;
+}
+
+const wait = ms => new Promise(r => setTimeout(r, ms));
+
+/* ════════════════════════════════
+   IQ + TELEMETRY
+════════════════════════════════ */
+function refreshIQ() {
+  const succ = registry.filter(b=>b.type==='success');
+  const avg = succ.length ? succ.reduce((a,b)=>a+b.conf,0)/succ.length : 0;
+  iq = Math.round(registry.length * avg * 1.3 + campaigns.length * 9);
+
+  anim('iqVal', iq);
+  anim('dIQ', iq);
+  anim('tBP', registry.length);
+  anim('dBP', registry.length);
+  anim('tSucc', registry.filter(b=>b.type==='success').length);
+  anim('tFail', registry.filter(b=>b.type==='failure').length);
+  anim('tSig',  registry.filter(b=>b.type==='signal').length);
+  anim('tCamp', campaigns.length);
+  anim('dCamp', campaigns.length);
+
+  const confs = registry.map(b=>b.conf);
+  const avgStr = confs.length ? Math.round(confs.reduce((a,b)=>a+b)/confs.length)+'%' : '—';
+  document.getElementById('tConf').textContent = avgStr;
+  document.getElementById('dConf').textContent = avgStr;
+  document.getElementById('iqTrend').textContent = iq > 0 ? '↑' : '—';
+}
+
+function anim(id, target) {
+  const el = document.getElementById(id);
+  if (!el || isNaN(target)) return;
+  const from = parseInt(el.textContent)||0;
+  const diff = target - from;
+  if (!diff) return;
+  let s = 0;
+  const t = setInterval(()=>{
+    s++;
+    el.textContent = Math.round(from + diff * (s/20));
+    if (s>=20) { el.textContent = target; clearInterval(t); }
+  }, 25);
+}
+
+/* ════════════════════════════════
+   CLAUDE API
+════════════════════════════════ */
+async function ai(system, user) {
+  const r = await fetch('/api/claude', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      model:'claude-sonnet-4-6',
+      max_tokens:1000,
+      system,
+      messages:[{role:'user',content:user}]
+    })
+  });
+  const d = await r.json();
+  return d.content[0].text;
+}
+
+function parseJSON(txt, fallback) {
+  try { return JSON.parse(txt.replace(/```json|```/g,'').trim()); }
+  catch { return fallback; }
+}
+
+/* ════════════════════════════════
+   MAIN AGENT SWARM
+════════════════════════════════ */
+async function runSwarm() {
+  if (running) return;
+  running = true;
+  t0 = Date.now();
+
+  const btn = document.getElementById('launchBtn');
+  btn.disabled = true;
+  document.getElementById('launchIcon').className = 'spin';
+  document.getElementById('launchTxt').textContent = 'RUNNING...';
+
+  const partner   = document.getElementById('fPartner').value || 'Partner';
+  const region    = document.getElementById('fRegion').value;
+  const objective = document.getElementById('fObjective').value;
+  const demo      = document.getElementById('fDemo').value;
+  const budget    = document.getElementById('fBudget').value;
+  const context   = document.getElementById('fContext').value;
+
+  document.getElementById('heroCard').style.display = 'none';
+  document.getElementById('outputs').style.display = 'block';
+  document.getElementById('oc-guard').style.display = 'none';
+  document.getElementById('oc-result').style.display = 'none';
+
+  ['scout','arch','build','guard','pub'].forEach(a => setAgent(a,''));
+  document.getElementById('termBody').innerHTML = '';
+
+  ['bpUsed','stratBody','assetsBody'].forEach(id => {
+    document.getElementById(id).innerHTML = '<div class="shim"></div><div class="shim" style="width:70%"></div>';
+  });
+  document.getElementById('convNum').textContent='—';
+  document.getElementById('convSub').textContent='Calculating...';
+  document.getElementById('convProg').style.width='0';
+  setTermStatus('RUNNING','var(--signal)');
+
+  const hasReg = registry.length > 0;
+  const matches = registry.filter(b =>
+    (b.region && region.includes(b.region.split(',')[0])) ||
+    b.demo === demo || b.type === 'signal'
+  );
+
+  try {
+    /* ── SCOUT ── */
+    setAgent('scout','running');
+    log('Scout Agent online — ingesting campaign context...','agent');
+    await wait(700);
+    log(`  Partner: ${partner}  |  Region: ${region}`,'sys');
+    log(`  Objective: ${objective}  |  Budget: ${budget}`,'sys');
+    await wait(500);
+
+    if (hasReg) {
+      setAgent('scout','querying');
+      log(`Querying Intelligence Registry — ${registry.length} Blueprints indexed...`,'query');
+      await wait(900);
+      if (matches.length) {
+        log(`  ✓ ${matches.length} matching Blueprint(s) retrieved`,'ok');
+        matches.slice(0,3).forEach(m => log(`    → [${m.id}] ${m.title} (conf: ${m.conf}%)`,'query'));
+      } else {
+        log('  No direct matches — proceeding with general network patterns','sys');
+      }
+    } else {
+      log('Registry empty — baseline mode (no prior intelligence)','sys');
+    }
+
+    setAgent('scout','done');
+    log('✓ Scout complete','ok');
+    await wait(300);
+
+    /* ── ARCHITECT ── */
+    setAgent('arch','running');
+    log('Architect Agent — synthesising strategy from Blueprints...','agent');
+    await wait(500);
+
+    const archSys = `You are the Architect Agent in NEXUS. Build a campaign strategy.
+Return ONLY valid JSON, no markdown:
+{"messaging_angle":"<8 words max>","channel_mix":["ch1","ch2","ch3"],"timing":"<timing>","key_insight":"<insight>","blueprint_leverage":"<how registry was used>","expected_conversion":<number 8-35>}`;
+
+    const archIn = `Campaign: ${partner} | ${region} | ${objective}
+Demographic: ${demo} | Budget: ${budget} | Context: ${context}
+Registry blueprints: ${matches.map(b=>`[${b.id}] ${b.insight}`).join(' // ') || 'none'}`;
+
+    log('  Invoking AI strategy synthesis...','sys');
+    const archTxt = await ai(archSys, archIn);
+    const strat = parseJSON(archTxt, {
+      messaging_angle:'Scholarship-first, placement-proven',
+      channel_mix:['WhatsApp outreach','College events','Regional Facebook'],
+      timing:'Sunday 6–9 PM IST',
+      key_insight: matches.length ? matches[0].insight : 'Lead with scholarship angle in this demographic',
+      blueprint_leverage: matches.length ? `Applied ${matches.length} blueprint(s)` : 'No prior registry data',
+      expected_conversion: matches.length ? 22 + Math.floor(Math.random()*10) : 9 + Math.floor(Math.random()*4)
+    });
+
+    log(`  Strategy: ${strat.messaging_angle}`,'ok');
+    log(`  Blueprint leverage: ${strat.blueprint_leverage}`, matches.length?'ok':'sys');
+    setAgent('arch','done');
+    log('✓ Architect complete','ok');
+    await wait(300);
+
+    /* ── BUILDER ── */
+    setAgent('build','running');
+    log('Builder Agent — generating campaign assets...','agent');
+    await wait(500);
+
+    const buildSys = `You are the Builder Agent in NEXUS. Generate assets.
+Return ONLY valid JSON:
+{"headline":"<landing page headline under 10 words>","cta":"<CTA text>","whatsapp":"<WhatsApp message under 40 words>","vernacular":"<regional hook, can be Telugu/Hindi inflected>","asset_count":<4-7>}`;
+
+    const buildTxt = await ai(buildSys, `Strategy:${JSON.stringify(strat)} Region:${region} Demo:${demo} Partner:${partner}`);
+    const assets = parseJSON(buildTxt, {
+      headline:'Your Future Starts Here — Apply Now',
+      cta:'Claim Scholarship →',
+      whatsapp:`${partner} is offering limited B.Tech scholarships. 90%+ placement. Apply before seats close!`,
+      vernacular:'Mana pillalaku best future — guaranteed placement!',
+      asset_count:5
+    });
+
+    log(`  Generated ${assets.asset_count} assets`,'ok');
+    log(`  Headline: "${assets.headline}"`,'sys');
+    setAgent('build','done');
+    log('✓ Builder complete','ok');
+    await wait(300);
+
+    /* ── GUARDIAN ── */
+    setAgent('guard','running');
+    log('Guardian Agent — cross-checking failure patterns...','agent');
+    await wait(600);
+
+    const fails = registry.filter(b=>b.type==='failure');
+    const guardSys = `You are the Guardian Agent in NEXUS. Validate assets.
+Return ONLY valid JSON:
+{"status":"APPROVED" or "APPROVED WITH WARNINGS","score":<75-99>,"flags":["flag if any"],"corrections":["fix if any"],"patterns_checked":<number>,"risk":"LOW" or "MEDIUM"}`;
+
+    const guardTxt = await ai(guardSys, `Assets:${JSON.stringify(assets)} Failure patterns:${fails.map(f=>f.title).join(', ')||'none'} Region:${region}`);
+    const guard = parseJSON(guardTxt, {
+      status:'APPROVED WITH WARNINGS',
+      score:87,
+      flags:fails.length?[`Checked against ${fails.length} known failure patterns`]:[],
+      corrections:['Ensure CTA visible above fold on mobile','Add scholarship T&C link'],
+      patterns_checked:fails.length,
+      risk:'LOW'
+    });
+
+    log(`  Compliance score: ${guard.score}%`, guard.score>85?'ok':'query');
+    log(`  Status: ${guard.status}`, guard.status.includes('APPROVED')?'ok':'query');
+    guard.flags.forEach(f => log(`  ⚠ ${f}`,'query'));
+    setAgent('guard','done');
+    log('✓ Guardian complete','ok');
+    await wait(300);
+
+    /* ── PUBLISHER ── */
+    setAgent('pub','running');
+    log('Publisher Agent — extracting and publishing Blueprint...','pub');
+    await wait(700);
+
+    const bpId = `BP-${String(registry.length+1).padStart(4,'0')}`;
+    const newBP = {
+      id: bpId, type:'success',
+      title:`${strat.messaging_angle} — ${region.split(',')[0]}`,
+      region, demo,
+      conf: guard.score,
+      insight: strat.key_insight,
+      conv: strat.expected_conversion,
+      ts: new Date().toLocaleTimeString(),
+      partner, fresh:true
+    };
+    registry.push(newBP);
+
+    // Regional signal
+    const hasSignal = registry.some(b=>b.type==='signal' && b.region===region);
+    if (!hasSignal && registry.length>1) {
+      registry.push({
+        id:`SIG-${String(registry.length).padStart(4,'0')}`,
+        type:'signal', region,
+        title:`Regional Signal: ${region.split(',')[0]}`,
+        conf:72,
+        insight:`${strat.timing} — optimal for this geography`,
+        ts:new Date().toLocaleTimeString(), fresh:true
+      });
+    }
+
+    // Failure pattern
+    if (guard.risk==='MEDIUM' && guard.flags.length) {
+      registry.push({
+        id:`FAIL-${String(registry.length).padStart(4,'0')}`,
+        type:'failure',
+        title:`Failure Pattern: ${guard.flags[0]}`,
+        conf:65,
+        insight:guard.corrections[0]||'Avoid in similar markets',
+        ts:new Date().toLocaleTimeString(), fresh:true
+      });
+    }
+
+    const campRec = { partner, region, objective, conv:strat.expected_conversion, bpUsed:matches.length, ts:new Date().toLocaleTimeString() };
+    campaigns.push(campRec);
+
+    const prevIQ = iq;
+    refreshIQ();
+    log(`  Blueprint ${bpId} published → confidence: ${guard.score}%`,'pub');
+    log(`  Network IQ: ${prevIQ} → ${iq}`,'pub');
+
+    setAgent('pub','done');
+    log('✓ Publisher complete','ok');
+    setTermStatus('COMPLETE','var(--live)');
+
+    // Fire canvas effect
+    publishEdgeEffect();
+    await wait(200);
+
+    /* ── RENDER OUTPUTS ── */
+
+    // Blueprints used
+    document.getElementById('bpUsed').innerHTML = matches.length
+      ? matches.map(m=>`<div class="bp-chip">🧩 ${m.id}</div>`).join('') +
+        `<div style="font-size:11px;color:var(--dim);margin-top:8px">${matches.length} blueprint(s) informed this run</div>`
+      : `<div style="color:var(--dim);font-size:12px">No prior blueprints — first run in this context.<br/><span style="color:var(--pulse)">Blueprint ${bpId} now published for future agents.</span></div>`;
+
+    const rate = strat.expected_conversion;
+    const convEl = document.getElementById('convNum');
+    convEl.textContent = rate+'%';
+    convEl.className = `bignum ${rate>20?'up':rate>13?'mid':'down'}`;
+    document.getElementById('convSub').textContent = matches.length
+      ? `↑ ${rate-9}pp above baseline — blueprint-informed`
+      : 'Baseline — no prior registry data';
+    document.getElementById('convProg').style.width = Math.min(rate*2.8,100)+'%';
+
+    document.getElementById('stratBody').innerHTML = [
+      {i:'🎯',t:strat.messaging_angle,s:'Primary angle'},
+      {i:'📱',t:strat.channel_mix.join(' → '),s:'Channel sequence'},
+      {i:'⏰',t:strat.timing,s:'Optimal timing'},
+      {i:'💡',t:strat.key_insight,s:'Key insight'}
+    ].map(x=>`<div class="strat-item"><div class="si">${x.i}</div><div><div class="st">${x.t}</div><div class="ss">${x.s}</div></div></div>`).join('');
+
+    document.getElementById('assetsBody').innerHTML = `
+      <div class="strat-item"><div class="si">📄</div><div><div class="st">"${assets.headline}"</div><div class="ss">Landing page headline</div></div></div>
+      <div class="strat-item"><div class="si">📲</div><div><div class="st">"${assets.whatsapp}"</div><div class="ss">WhatsApp template</div></div></div>
+      <div class="strat-item"><div class="si">🌐</div><div><div class="st">"${assets.vernacular}"</div><div class="ss">Vernacular hook</div></div></div>
+      <div style="margin-top:10px">
+        <span class="tag">LANDING PAGE</span><span class="tag">WHATSAPP</span><span class="tag">EMAIL</span><span class="tag">AD CREATIVE</span>
+        ${assets.asset_count>4?'<span class="tag">VIDEO SCRIPT</span>':''}
+      </div>`;
+
+    document.getElementById('oc-guard').style.display='block';
+    document.getElementById('guardBody').innerHTML = `
+      <div style="display:flex;gap:16px;align-items:center;margin-bottom:12px">
+        <div class="bignum ${guard.score>85?'up':'mid'}" style="font-size:34px">${guard.score}%</div>
+        <div>
+          <div style="font-weight:700;font-size:13px;color:${guard.status.includes('APPROVED')?'var(--live)':'var(--warn)'}">${guard.status}</div>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--dim);margin-top:2px">RISK: ${guard.risk} · PATTERNS CHECKED: ${guard.patterns_checked}</div>
+        </div>
+      </div>
+      ${guard.corrections.map(c=>`<div class="strat-item"><div class="si">🔧</div><div class="st" style="font-size:12px">${c}</div></div>`).join('')}`;
+
+    document.getElementById('oc-result').style.display='block';
+    document.getElementById('resultBody').innerHTML = `
+      <div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:14px">
+        <div><div class="bignum up" style="font-size:26px">${bpId}</div><div class="bigsub">Published</div></div>
+        <div><div class="bignum mid" style="font-size:26px">${guard.score}%</div><div class="bigsub">Confidence</div></div>
+        <div><div class="bignum up" style="font-size:26px">${registry.length}</div><div class="bigsub">Total BPs</div></div>
+        <div><div class="bignum mid" style="font-size:26px">${iq}</div><div class="bigsub">Network IQ</div></div>
+      </div>
+      <div style="font-size:12px;color:var(--dim)">Intelligence from this run is now available to all future agents. <strong style="color:var(--live)">The network just got smarter.</strong></div>`;
+
+    refreshRegistry();
+    refreshHistory(campRec, rate);
+    refreshDash();
+    toast(`✓ Blueprint ${bpId} published · Network IQ: ${iq}`);
+
+  } catch(err) {
+    log(`Error: ${err.message}`, 'sys');
+    setTermStatus('ERROR','var(--critical)');
+    toast('API error — check console for details.');
+    console.error(err);
+  }
+
+  btn.disabled = false;
+  document.getElementById('launchIcon').className = '';
+  document.getElementById('launchIcon').textContent = '⚡';
+  document.getElementById('launchTxt').textContent = 'LAUNCH AGENT SWARM';
+  running = false;
+}
+
+/* ════════════════════════════════
+   REGISTRY
+════════════════════════════════ */
+function refreshRegistry() {
+  const empty = document.getElementById('regEmpty');
+  const grid  = document.getElementById('regGrid');
+  if (!registry.length) { empty.style.display='flex'; grid.style.display='none'; return; }
+  empty.style.display='none';
+  grid.style.display='grid';
+  grid.innerHTML = [...registry].reverse().map(b=>{
+    const cc = b.conf>80?'h':b.conf>60?'m':'l';
+    return `<div class="bp-card ${b.fresh?'fresh':''}">
+      <div class="bp-hd">
+        <div class="bp-id-mono">${b.id}</div>
+        <div class="bp-type-chip ${b.type}">${b.type}</div>
+      </div>
+      <div class="bp-title-text">${b.title}</div>
+      <div class="bp-meta-row"><span>📍 ${b.region?b.region.split(',')[0]:'General'}</span><span>⏱ ${b.ts||''}</span></div>
+      <div class="conf-track"><div class="conf-bar ${cc}" style="width:${b.conf||0}%"></div></div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--dim);margin-bottom:8px">CONFIDENCE ${b.conf||0}%</div>
+      <div class="bp-insight-text">${b.insight||''}</div>
+      ${b.conv?`<div style="margin-top:8px"><span class="tag">📈 ${b.conv}% CONV</span></div>`:''}
+    </div>`;
+  }).join('');
+  setTimeout(()=>registry.forEach(b=>b.fresh=false),800);
+}
+
+/* ════════════════════════════════
+   DASHBOARD
+════════════════════════════════ */
+function refreshDash() {
+  const insights = [];
+  const succ = registry.filter(b=>b.type==='success');
+  if (succ.length>=2) {
+    const avg = Math.round(succ.reduce((a,b)=>a+(b.conv||0),0)/succ.length);
+    insights.push({n:'01',t:`Blueprint-informed campaigns average ${avg}% conversion vs 9% baseline — a ${avg-9}pp improvement from collective intelligence.`,s:`Based on ${succ.length} success blueprints`});
+  }
+  const regions = [...new Set(registry.filter(b=>b.region).map(b=>b.region.split(',')[0]))];
+  if (regions.length>=2) insights.push({n:'02',t:`Network spans ${regions.length} regions: ${regions.join(', ')}. Cross-regional pattern matching active.`,s:'Regional signal analysis'});
+  if (registry.filter(b=>b.type==='failure').length) insights.push({n:'03',t:`${registry.filter(b=>b.type==='failure').length} failure pattern(s) catalogued. Guardian will prevent these mistakes in all future campaigns automatically.`,s:'Failure pattern registry'});
+  if (campaigns.length>=2) {
+    const f=campaigns[0], l=campaigns[campaigns.length-1];
+    insights.push({n:String(insights.length+1).padStart(2,'0'),t:`Conversion trajectory: ${f.conv}% (run 1) → ${l.conv}% (run ${campaigns.length}). Collective intelligence compounding confirmed.`,s:'Cross-campaign trajectory'});
+  }
+
+  const feed = document.getElementById('insightFeed');
+  feed.innerHTML = insights.length
+    ? insights.map(i=>`<div class="insight-row"><div class="insight-n">${i.n}</div><div><div class="insight-body">${i.t}</div><div class="insight-src">📊 ${i.s}</div></div></div>`).join('')
+    : `<div class="empty"><div class="empty-glyph" style="font-size:28px">💡</div><div class="empty-h">No patterns yet</div><div class="empty-p">Run 2+ campaigns to surface intelligence.</div></div>`;
+}
+
+/* ════════════════════════════════
+   HISTORY / COMPARE
+════════════════════════════════ */
+function refreshHistory(latest, rate) {
+  if (campaigns.length) {
+    const best = Math.max(...campaigns.map(c=>c.conv));
+    const cmpEl = document.getElementById('cmpAfter');
+    cmpEl.textContent = best+'%';
+    cmpEl.style.color = 'var(--live)';
+    document.getElementById('cmpAfterSub').innerHTML =
+      `<strong>Time to deploy: 4 minutes</strong><br/>${campaigns[campaigns.length-1].bpUsed} blueprint(s) used.<br/>${best-9}pp improvement over baseline.`;
+  }
+  const feed = document.getElementById('histFeed');
+  feed.innerHTML = [...campaigns].reverse().map(c=>`
+    <div class="hist-item">
+      <div>
+        <div class="hist-name">${c.partner}</div>
+        <div class="hist-region">📍 ${c.region} · ${c.ts}</div>
+      </div>
+      <div class="hist-stat"><div class="hist-stat-val ${c.conv>20?'good':''}">${c.conv}%</div><div class="hist-stat-label">CONV</div></div>
+      <div class="hist-stat"><div class="hist-stat-val">${c.bpUsed}</div><div class="hist-stat-label">BPs USED</div></div>
+      ${c.conv>9?`<div class="hist-stat"><div class="hist-stat-val good">+${c.conv-9}pp</div><div class="hist-stat-label">VS BASE</div></div>`:''}
+    </div>`).join('');
+}
+
+/* ════════════════════════════════
+   RESET
+════════════════════════════════ */
+function hardReset() {
+  registry=[]; campaigns=[]; iq=0;
+  ['iqVal','dIQ','tBP','dBP','tSucc','tFail','tSig','tCamp','dCamp'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.textContent='0';
+  });
+  ['tConf','dConf'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='—';});
+  document.getElementById('outputs').style.display='none';
+  document.getElementById('heroCard').style.display='block';
+  document.getElementById('termBody').innerHTML='<div class="log sys"><span class="log-t">0.0s</span>Registry cleared. System ready.</div>';
+  setTermStatus('IDLE','var(--dim)');
+  ['scout','arch','build','guard','pub'].forEach(a=>setAgent(a,''));
+  refreshRegistry();
+  refreshDash();
+  document.getElementById('histFeed').innerHTML='<div class="empty"><div class="empty-glyph" style="font-size:28px">📋</div><div class="empty-h">No campaigns yet</div></div>';
+  document.getElementById('cmpAfter').textContent='—';
+  document.getElementById('cmpAfter').style.color='var(--dim)';
+  document.getElementById('cmpAfterSub').textContent='Run your first campaign to see the improvement.';
+  edges=[];
+  toast('Registry reset · Starting fresh');
+}
+
+/* ════════════════════════════════
+   TOAST
+════════════════════════════════ */
+function toast(msg) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),4000);
+}
+</script>
+</body>
+</html>
